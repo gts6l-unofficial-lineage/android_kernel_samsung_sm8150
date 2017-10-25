@@ -97,6 +97,7 @@ struct inet_request_sock {
 #else
 				no_srccheck: 1;
 #endif
+	u8 smc_ok : 1;
 	u32                     ir_mark;
 	union {
 		struct ip_options_rcu __rcu	*ireq_opt;
