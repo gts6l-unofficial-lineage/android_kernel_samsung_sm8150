@@ -863,7 +863,7 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
 	 * (seen in netd's cgroup inet_create program). Always fall back to the interpreter, but keep
 	 * CONFIG_BPF_JIT so /proc/sys/net/core/bpf_jit_enable exists for Android's netbpfload.
 	 */
-	if (IS_ENABLED(CONFIG_UH_RKP) || !bpf_jit_enable)
+	if (IS_ENABLED(CONFIG_UH_RKP) || !prog->jit_requested)
 		return orig_prog;
 
 	tmp = bpf_jit_blind_constants(prog);
