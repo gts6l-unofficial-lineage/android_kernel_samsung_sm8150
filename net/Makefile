@@ -91,3 +91,4 @@ obj-$(CONFIG_RMNET_USB) += rmnet_usb/
 # KNOX NPA - START
 obj-$(CONFIG_KNOX_NCM)	+= ncm/
 # KNOX NPA - END
+obj-$(CONFIG_XDP_SOCKETS)	+= xdp/
