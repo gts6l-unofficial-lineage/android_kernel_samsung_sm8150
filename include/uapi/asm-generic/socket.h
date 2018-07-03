@@ -113,6 +113,9 @@
 #define SO_SET_DNS_PID 1002
 // KNOX NPA - END
 
+#define SO_TXTIME		61
+#define SCM_TXTIME		SO_TXTIME
+
 #define SO_DETACH_REUSEPORT_BPF 68
 
 #endif /* __ASM_GENERIC_SOCKET_H */
