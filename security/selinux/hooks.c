@@ -7120,22 +7120,10 @@ static struct security_hook_list selinux_hooks[] __lsm_ro_after_init_kdp = {
 
 static __init int selinux_init(void)
 {
-	if (!security_module_enable("selinux")) {
-// [ SEC_SELINUX_PORTING_COMMON
 #ifdef CONFIG_ALWAYS_ENFORCE
-		selinux_enabled = 1;
-#else
-		selinux_enabled = 0;
+	selinux_enabled = 1;
+	selinux_enforcing_boot = 1;
 #endif
-// ] SEC_SELINUX_PORTING_COMMON
-		return 0;
-	}
-
-	if (!selinux_enabled) {
-		printk(KERN_INFO "SELinux:  Disabled at boot.\n");
-		return 0;
-	}
-
 	printk(KERN_INFO "SELinux:  Initializing.\n");
 
 	memset(&selinux_state, 0, sizeof(selinux_state));
