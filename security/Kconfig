@@ -294,6 +294,15 @@ config SDP_KEY_DUMP
     bool "SDP KEY DUMP"
     default n
 
+config LSM
+	string "Ordered list of enabled LSMs"
+	default "integrity"
+	help
+	  A comma-separated list of LSMs, in initialization order.
+	  Any LSMs left off this list will be ignored.
+
+	  If unsure, leave this as the default.
+
 source "security/Kconfig.hardening"
 
 endmenu
