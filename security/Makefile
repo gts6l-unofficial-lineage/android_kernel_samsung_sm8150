@@ -12,6 +12,7 @@ subdir-$(CONFIG_SECURITY_YAMA)		+= yama
 subdir-$(CONFIG_SECURITY_LOADPIN)	+= loadpin
 subdir-$(CONFIG_SECURITY_DEFEX)		+= samsung/defex_lsm
 subdir-$(CONFIG_SECURITY_DSMS)		+= samsung/dsms
+subdir-$(CONFIG_BPF_LSM)		+= bpf
 
 # always enable default capabilities
 obj-y					+= commoncap.o
@@ -30,6 +31,7 @@ obj-$(CONFIG_SECURITY_LOADPIN)		+= loadpin/
 obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
 obj-$(CONFIG_SECURITY_DEFEX)		+= samsung/defex_lsm/built-in.o
 obj-$(CONFIG_SECURITY_DSMS)		+= samsung/dsms/
+obj-$(CONFIG_BPF_LSM)			+= bpf/
 
 # Object integrity file lists
 subdir-$(CONFIG_INTEGRITY)		+= integrity
