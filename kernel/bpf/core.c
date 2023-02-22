@@ -35,6 +35,7 @@
 #include <linux/rkp.h>
 #endif
 #include <linux/perf_event.h>
+#include <linux/nospec.h>
 
 #include <asm/barrier.h>
 #include <asm/unaligned.h>
