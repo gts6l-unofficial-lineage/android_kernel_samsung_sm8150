@@ -39,7 +39,7 @@
 
 #include <linux/of_address.h>
 #include <linux/kthread.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <drm/drm_of.h>
 #include <soc/qcom/boot_stats.h>
 #include "msm_drv.h"

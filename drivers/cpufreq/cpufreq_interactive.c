@@ -32,7 +32,7 @@
 #include <linux/timer.h>
 #include <linux/kthread.h>
 #include <linux/slab.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>

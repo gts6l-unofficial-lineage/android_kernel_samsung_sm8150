@@ -19,7 +19,7 @@
 #include <linux/sizes.h>
 #include <linux/spinlock.h>
 #include <net/sock.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #include <soc/qcom/qrtr_ethernet.h>
 #include "qrtr.h"

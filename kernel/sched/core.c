@@ -7,7 +7,7 @@
  */
 #include <linux/sched.h>
 #include <linux/sched/clock.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/sched/loadavg.h>
 #include <linux/sched/hotplug.h>
 #include <linux/wait_bit.h>

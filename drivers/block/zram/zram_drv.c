@@ -44,7 +44,7 @@
 #include <linux/delay.h>
 #include <linux/compat.h>
 #include <uapi/linux/falloc.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <uapi/linux/magic.h>
 
 #include "zram_drv.h"

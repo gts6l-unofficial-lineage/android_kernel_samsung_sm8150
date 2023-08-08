@@ -20,7 +20,7 @@
 #include <linux/sched.h>
 #include <linux/sched/rt.h>
 #include <linux/syscore_ops.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/sched/core_ctl.h>
 
 #include <trace/events/sched.h>

@@ -19,7 +19,7 @@
 #include <linux/sched/rt.h>
 #include <linux/slab.h>
 #include <linux/cpuhotplug.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>

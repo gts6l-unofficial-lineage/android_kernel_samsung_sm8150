@@ -23,7 +23,7 @@
 #include <linux/pm_wakeup.h>
 
 #include <net/sock.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #include <soc/qcom/subsystem_restart.h>
 

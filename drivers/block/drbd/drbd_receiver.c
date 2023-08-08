@@ -36,7 +36,7 @@
 #include <linux/memcontrol.h>
 #include <linux/mm_inline.h>
 #include <linux/slab.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/sched/signal.h>
 #include <linux/pkt_sched.h>
 #define __KERNEL_SYSCALLS__

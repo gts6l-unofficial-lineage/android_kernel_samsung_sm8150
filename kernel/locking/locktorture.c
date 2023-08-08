@@ -32,7 +32,7 @@
 #include <linux/smp.h>
 #include <linux/interrupt.h>
 #include <linux/sched.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/rtmutex.h>
 #include <linux/atomic.h>
 #include <linux/moduleparam.h>

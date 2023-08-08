@@ -34,7 +34,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/sched/clock.h>
 #include <linux/cpumask.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #include <linux/sec_debug.h>
 

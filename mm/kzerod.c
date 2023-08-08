@@ -5,7 +5,7 @@
  * Copyright (C) 2019 Samsung Electronics
  *
  */
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/suspend.h>
 #include <linux/kthread.h>
 #include <linux/module.h>

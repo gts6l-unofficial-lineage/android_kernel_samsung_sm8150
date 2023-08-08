@@ -33,7 +33,7 @@
 #include <linux/mm.h>
 #include <linux/ion.h>
 #include <asm/cacheflush.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <soc/qcom/boot_stats.h>
 
 #include "kgsl.h"

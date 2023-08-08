@@ -27,7 +27,7 @@
 #include <linux/sort.h>
 #include <linux/kmemleak.h>
 #include <linux/sched.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 #include <linux/sched/clock.h>
 
 #include <soc/qcom/event_timer.h>

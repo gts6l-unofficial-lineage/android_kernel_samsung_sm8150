@@ -28,7 +28,7 @@
 #include <linux/slab.h>
 #include <linux/syscalls.h>
 #include <linux/uaccess.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #include "ptp_private.h"
 

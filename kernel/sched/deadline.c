@@ -19,7 +19,7 @@
 #include "walt.h"
 
 #include <linux/slab.h>
-#include <uapi/linux/sched/types.h>
+#include <linux/sched/types.h>
 
 #include "walt.h"
 
