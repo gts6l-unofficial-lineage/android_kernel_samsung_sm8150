@@ -38,17 +38,32 @@ typedef unsigned long mm_segment_t;
  */
 struct thread_info {
 	unsigned long		flags;		/* low level flags */
+	unsigned long		padding[7];
 	mm_segment_t		addr_limit;	/* address limit */
 #ifdef CONFIG_ARM64_SW_TTBR0_PAN
 	u64			ttbr0;		/* saved TTBR0_EL1 */
 #endif
 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
+#ifdef CONFIG_RKP_CFP_ROPP
+	unsigned long rrk;
+#endif
+#ifdef CONFIG_SHADOW_CALL_STACK
+	void			*shadow_call_stack;
+#endif
 };
+
+#ifdef CONFIG_RKP_CFP_ROPP
+# define INIT_THREAD_INFO_RKP_CFP(tsk)					\
+	.rrk = 0,
+#else
+# define INIT_THREAD_INFO_RKP_CFP(tsk)
+#endif
 
 #define INIT_THREAD_INFO(tsk)						\
 {									\
 	.preempt_count	= INIT_PREEMPT_COUNT,				\
 	.addr_limit	= KERNEL_DS,					\
+	INIT_THREAD_INFO_RKP_CFP(tsk)					\
 }
 
 #define init_stack		(init_thread_union.stack)
@@ -93,6 +108,8 @@ void arch_setup_new_exec(void);
 #define TIF_SINGLESTEP		21
 #define TIF_32BIT		22	/* 32bit process */
 #define TIF_SSBD		23	/* Wants SSB mitigation */
+#define TIF_TAGGED_ADDR		24	/* Allow tagged user addresses */
+#define TIF_MM_RELEASED		25
 
 #define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
 #define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)

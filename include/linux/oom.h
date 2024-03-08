@@ -113,8 +113,20 @@ extern void oom_killer_enable(void);
 
 extern struct task_struct *find_lock_task_mm(struct task_struct *p);
 
+extern void dump_tasks(struct mem_cgroup *memcg,
+		const nodemask_t *nodemask);
+#ifdef CONFIG_ION
+extern void show_ion_system_heap(void);
+#endif
+
+extern void wake_oom_reaper(struct task_struct *tsk);
+
 /* sysctls */
 extern int sysctl_oom_dump_tasks;
 extern int sysctl_oom_kill_allocating_task;
 extern int sysctl_panic_on_oom;
+extern int sysctl_reap_mem_on_sigkill;
+
+/* calls for LMK reaper */
+extern void add_to_oom_reaper(struct task_struct *p);
 #endif /* _INCLUDE_LINUX_OOM_H */

@@ -129,11 +129,18 @@ int ipv6_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt
 	 * A packet received on an interface with a destination address
 	 * of loopback must be dropped.
 	 */
+	/*
+	 * EMBMS fix : multicasted embms src address cannot pass this condition.
+         * That drops here and got lost service
 	if ((ipv6_addr_loopback(&hdr->saddr) ||
 	     ipv6_addr_loopback(&hdr->daddr)) &&
 	     !(dev->flags & IFF_LOOPBACK))
 		goto err;
-
+	*/
+	if (!(dev->flags & IFF_LOOPBACK) &&
+             ipv6_addr_loopback(&hdr->daddr))
+		goto err;
+	
 	/* RFC4291 Errata ID: 3480
 	 * Interface-Local scope spans only a single interface on a
 	 * node and is useful only for loopback transmission of
@@ -229,28 +236,26 @@ drop:
 /*
  *	Deliver the packet to the host
  */
-
-
-static int ip6_input_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
+void ip6_protocol_deliver_rcu(struct net *net, struct sk_buff *skb, int nexthdr,
+			      bool have_final)
 {
 	const struct inet6_protocol *ipprot;
 	struct inet6_dev *idev;
 	unsigned int nhoff;
-	int nexthdr;
 	bool raw;
-	bool have_final = false;
 
 	/*
 	 *	Parse extension headers
 	 */
 
-	rcu_read_lock();
 resubmit:
 	idev = ip6_dst_idev(skb_dst(skb));
-	if (!pskb_pull(skb, skb_transport_offset(skb)))
-		goto discard;
 	nhoff = IP6CB(skb)->nhoff;
-	nexthdr = skb_network_header(skb)[nhoff];
+	if (!have_final) {
+		if (!pskb_pull(skb, skb_transport_offset(skb)))
+			goto discard;
+		nexthdr = skb_network_header(skb)[nhoff];
+	}
 
 resubmit_final:
 	raw = raw6_local_deliver(skb, nexthdr);
@@ -321,13 +326,19 @@ resubmit_final:
 			consume_skb(skb);
 		}
 	}
-	rcu_read_unlock();
-	return 0;
+	return;
 
 discard:
 	__IP6_INC_STATS(net, idev, IPSTATS_MIB_INDISCARDS);
-	rcu_read_unlock();
 	kfree_skb(skb);
+}
+
+static int ip6_input_finish(struct net *net, struct sock *sk, struct sk_buff *skb)
+{
+	rcu_read_lock();
+	ip6_protocol_deliver_rcu(net, skb, 0, false);
+	rcu_read_unlock();
+
 	return 0;
 }
 

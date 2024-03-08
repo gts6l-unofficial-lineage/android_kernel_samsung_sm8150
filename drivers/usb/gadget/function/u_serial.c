@@ -715,7 +715,7 @@ static int gs_start_io(struct gs_port *port)
 	port->n_read = 0;
 	started = gs_start_rx(port);
 
-	if (started) {
+	if (started && port->port.tty) {
 		gs_start_tx(port);
 		/* Unblock any pending writes into our circular buffer, in case
 		 * we didn't in gs_start_tx() */
@@ -854,6 +854,11 @@ static void gs_close(struct tty_struct *tty, struct file *file)
 {
 	struct gs_port *port = tty->driver_data;
 	struct gserial	*gser;
+
+	if (!port) {
+		pr_err("%s: Error - port or port->usb is NULL\n", __func__);
+		return;
+	}
 
 	spin_lock_irq(&port->port_lock);
 
@@ -1303,9 +1308,13 @@ gs_port_alloc(unsigned port_num, struct usb_cdc_line_coding *coding)
 	}
 
 	tty_port_init(&port->port);
+	tty_buffer_set_limit(&port->port, 8388608);
 	spin_lock_init(&port->port_lock);
 	init_waitqueue_head(&port->drain_wait);
 	init_waitqueue_head(&port->close_wait);
+
+	pr_debug("%s open:ttyGS%d and set 8388608, avail:%d\n", __func__,
+		port_num, tty_buffer_space_avail(&port->port));
 
 	tasklet_init(&port->push, gs_rx_push, (unsigned long) port);
 

@@ -34,6 +34,7 @@
 #include <drm/drmP.h>
 
 #include "drm_internal.h"
+#include "msm/sde/sde_trace.h"
 
 /*
  * DMA-BUF/GEM Object references and lifetime overview:
@@ -595,6 +596,43 @@ out_unlock:
 EXPORT_SYMBOL(drm_gem_prime_handle_to_fd);
 
 /**
+ * drm_gem_prime_mmap - PRIME mmap function for GEM drivers
+ * @obj: GEM object
+ * @vma: Virtual address range
+ *
+ * This function sets up a userspace mapping for PRIME exported buffers using
+ * the same codepath that is used for regular GEM buffer mapping on the DRM fd.
+ * The fake GEM offset is added to vma->vm_pgoff and &drm_driver->fops->mmap is
+ * called to set up the mapping.
+ *
+ * Drivers can use this as their &drm_driver.gem_prime_mmap callback.
+ */
+int drm_gem_prime_mmap(struct drm_gem_object *obj, struct vm_area_struct *vma)
+{
+	/* Used by drm_gem_mmap() to lookup the GEM object */
+	struct drm_file priv = {
+		.minor = obj->dev->primary,
+	};
+	struct file fil = {
+		.private_data = &priv,
+	};
+	int ret;
+
+	ret = drm_vma_node_allow(&obj->vma_node, &priv);
+	if (ret)
+		return ret;
+
+	vma->vm_pgoff += drm_vma_node_start(&obj->vma_node);
+
+	ret = obj->dev->driver->fops->mmap(&fil, vma);
+
+	drm_vma_node_revoke(&obj->vma_node, &priv);
+
+	return ret;
+}
+EXPORT_SYMBOL(drm_gem_prime_mmap);
+
+/**
  * drm_gem_prime_import_dev - core implementation of the import callback
  * @dev: drm_device to import into
  * @dma_buf: dma-buf object to import
@@ -699,6 +737,7 @@ int drm_gem_prime_fd_to_handle(struct drm_device *dev,
 	if (IS_ERR(dma_buf))
 		return PTR_ERR(dma_buf);
 
+	SDE_ATRACE_BEGIN("drm_gem_prime_fd_to_handle");
 	mutex_lock(&file_priv->prime.lock);
 
 	ret = drm_prime_lookup_buf_handle(&file_priv->prime,
@@ -735,6 +774,7 @@ int drm_gem_prime_fd_to_handle(struct drm_device *dev,
 
 	dma_buf_put(dma_buf);
 
+	SDE_ATRACE_END("drm_gem_prime_fd_to_handle");
 	return 0;
 
 fail:

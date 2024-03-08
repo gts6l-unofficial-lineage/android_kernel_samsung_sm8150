@@ -91,6 +91,7 @@ static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 
 static unsigned bufsiz = 4096;
+
 module_param(bufsiz, uint, S_IRUGO);
 MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
 
@@ -672,6 +673,7 @@ static const struct of_device_id spidev_dt_ids[] = {
 	{ .compatible = "lineartechnology,ltc2488" },
 	{ .compatible = "ge,achc" },
 	{ .compatible = "semtech,sx1301" },
+	{ .compatible = "qcom,spi-msm-codec-slave" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, spidev_dt_ids);

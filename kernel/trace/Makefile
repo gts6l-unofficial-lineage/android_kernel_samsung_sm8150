@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
 
+# If instrumentation of this dir is enabled, the function tracer gets really
+# slow. Probably could be more selective here, but note that files related
+# to tracing.shouldn't be traced anyway.
+KCOV_INSTRUMENT		:= n
+
 # Do not instrument the tracer itself:
 
 ifdef CONFIG_FUNCTION_TRACER
@@ -35,6 +40,7 @@ obj-$(CONFIG_TRACING) += trace_printk.o
 obj-$(CONFIG_TRACING_MAP) += tracing_map.o
 obj-$(CONFIG_CONTEXT_SWITCH_TRACER) += trace_sched_switch.o
 obj-$(CONFIG_FUNCTION_TRACER) += trace_functions.o
+obj-$(CONFIG_PREEMPTIRQ_EVENTS) += trace_irqsoff.o
 obj-$(CONFIG_IRQSOFF_TRACER) += trace_irqsoff.o
 obj-$(CONFIG_PREEMPT_TRACER) += trace_irqsoff.o
 obj-$(CONFIG_SCHED_TRACER) += trace_sched_wakeup.o
@@ -68,7 +74,13 @@ obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
 endif
 obj-$(CONFIG_PROBE_EVENTS) += trace_probe.o
 obj-$(CONFIG_UPROBE_EVENTS) += trace_uprobe.o
+obj-$(CONFIG_GPU_TRACEPOINTS) += gpu-traces.o
 
 obj-$(CONFIG_TRACEPOINT_BENCHMARK) += trace_benchmark.o
 
+obj-$(CONFIG_QCOM_RTB) += msm_rtb.o
+obj-$(CONFIG_IPC_LOGGING) += ipc_logging.o
+ifdef CONFIG_DEBUG_FS
+obj-$(CONFIG_IPC_LOGGING) += ipc_logging_debug.o
+endif
 libftrace-y := ftrace.o

@@ -16,6 +16,11 @@
 #include <linux/interrupt.h>
 #include <linux/kernel_stat.h>
 #include <linux/irqdomain.h>
+#include <linux/wakeup_reason.h>
+
+#ifdef CONFIG_SEC_DEBUG
+#include <linux/sec_debug.h>
+#endif
 
 #include <trace/events/irq.h>
 
@@ -480,8 +485,22 @@ static bool irq_may_run(struct irq_desc *desc)
 	 * If the interrupt is not in progress and is not an armed
 	 * wakeup interrupt, proceed.
 	 */
-	if (!irqd_has_set(&desc->irq_data, mask))
+	if (!irqd_has_set(&desc->irq_data, mask)) {
+#ifdef CONFIG_PM_SLEEP
+		if (unlikely(desc->no_suspend_depth &&
+			     irqd_is_wakeup_set(&desc->irq_data))) {
+			unsigned int irq = irq_desc_get_irq(desc);
+			const char *name = "(unnamed)";
+
+			if (desc->action && desc->action->name)
+				name = desc->action->name;
+
+			log_abnormal_wakeup_reason("misconfigured IRQ %u %s",
+						   irq, name);
+		}
+#endif
 		return true;
+	}
 
 	/*
 	 * If the interrupt is an armed wakeup source, mark it pending
@@ -877,9 +896,18 @@ void handle_percpu_devid_irq(struct irq_desc *desc)
 		chip->irq_ack(&desc->irq_data);
 
 	if (likely(action)) {
+#ifdef CONFIG_SEC_DEBUG_SCHED_LOG
+		sec_debug_irq_sched_log(irq, action->handler,
+					(char *)action->name, IRQ_ENTRY);
+#endif
 		trace_irq_handler_entry(irq, action);
 		res = action->handler(irq, raw_cpu_ptr(action->percpu_dev_id));
 		trace_irq_handler_exit(irq, action, res);
+#ifdef CONFIG_SEC_DEBUG_SCHED_LOG
+		sec_debug_irq_sched_log(irq, action->handler,
+					(char *)action->name, IRQ_EXIT);
+#endif
+
 	} else {
 		unsigned int cpu = smp_processor_id();
 		bool enabled = cpumask_test_cpu(cpu, desc->percpu_enabled);

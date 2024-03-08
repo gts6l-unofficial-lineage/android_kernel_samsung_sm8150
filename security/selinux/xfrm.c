@@ -83,6 +83,7 @@ static int selinux_xfrm_alloc_user(struct xfrm_sec_ctx **ctxp,
 	struct xfrm_sec_ctx *ctx = NULL;
 	u32 str_len;
 
+
 	if (ctxp == NULL || uctx == NULL ||
 	    uctx->ctx_doi != XFRM_SC_DOI_LSM ||
 	    uctx->ctx_alg != XFRM_SC_ALG_SELINUX)
@@ -101,11 +102,13 @@ static int selinux_xfrm_alloc_user(struct xfrm_sec_ctx **ctxp,
 	ctx->ctx_len = str_len;
 	memcpy(ctx->ctx_str, &uctx[1], str_len);
 	ctx->ctx_str[str_len] = '\0';
-	rc = security_context_to_sid(ctx->ctx_str, str_len, &ctx->ctx_sid, gfp);
+	rc = security_context_to_sid(&selinux_state, ctx->ctx_str, str_len,
+				     &ctx->ctx_sid, gfp);
 	if (rc)
 		goto err;
 
-	rc = avc_has_perm(tsec->sid, ctx->ctx_sid,
+	rc = avc_has_perm(&selinux_state,
+			  tsec->sid, ctx->ctx_sid,
 			  SECCLASS_ASSOCIATION, ASSOCIATION__SETCONTEXT, NULL);
 	if (rc)
 		goto err;
@@ -141,7 +144,8 @@ static int selinux_xfrm_delete(struct xfrm_sec_ctx *ctx)
 	if (!ctx)
 		return 0;
 
-	return avc_has_perm(tsec->sid, ctx->ctx_sid,
+	return avc_has_perm(&selinux_state,
+			    tsec->sid, ctx->ctx_sid,
 			    SECCLASS_ASSOCIATION, ASSOCIATION__SETCONTEXT,
 			    NULL);
 }
@@ -154,6 +158,8 @@ int selinux_xfrm_policy_lookup(struct xfrm_sec_ctx *ctx, u32 fl_secid, u8 dir)
 {
 	int rc;
 
+#endif
+
 	/* All flows should be treated as polmatch'ing an otherwise applicable
 	 * "non-labeled" policy. This would prevent inadvertent "leaks". */
 	if (!ctx)
@@ -163,7 +169,8 @@ int selinux_xfrm_policy_lookup(struct xfrm_sec_ctx *ctx, u32 fl_secid, u8 dir)
 	if (!selinux_authorizable_ctx(ctx))
 		return -EINVAL;
 
-	rc = avc_has_perm(fl_secid, ctx->ctx_sid,
+	rc = avc_has_perm(&selinux_state,
+			  fl_secid, ctx->ctx_sid,
 			  SECCLASS_ASSOCIATION, ASSOCIATION__POLMATCH, NULL);
 	return (rc == -EACCES ? -ESRCH : rc);
 }
@@ -178,6 +185,7 @@ int selinux_xfrm_state_pol_flow_match(struct xfrm_state *x,
 {
 	u32 state_sid;
 
+#endif
 	if (!xp->security)
 		if (x->security)
 			/* unlabeled policy and labeled SA can't match */
@@ -202,7 +210,8 @@ int selinux_xfrm_state_pol_flow_match(struct xfrm_state *x,
 	/* We don't need a separate SA Vs. policy polmatch check since the SA
 	 * is now of the same label as the flow and a flow Vs. policy polmatch
 	 * check had already happened in selinux_xfrm_policy_lookup() above. */
-	return (avc_has_perm(fl->flowi_secid, state_sid,
+	return (avc_has_perm(&selinux_state,
+			     fl->flowi_secid, state_sid,
 			    SECCLASS_ASSOCIATION, ASSOCIATION__SENDTO,
 			    NULL) ? 0 : 1);
 }
@@ -226,6 +235,7 @@ static int selinux_xfrm_skb_sid_ingress(struct sk_buff *skb,
 {
 	u32 sid_session = SECSID_NULL;
 	struct sec_path *sp = skb->sp;
+#endif
 
 	if (sp) {
 		int i;
@@ -258,6 +268,8 @@ out:
  */
 int selinux_xfrm_decode_session(struct sk_buff *skb, u32 *sid, int ckall)
 {
+
+#endif
 	if (skb == NULL) {
 		*sid = SECSID_NULL;
 		return 0;
@@ -283,6 +295,7 @@ int selinux_xfrm_policy_alloc(struct xfrm_sec_ctx **ctxp,
 			      struct xfrm_user_sec_ctx *uctx,
 			      gfp_t gfp)
 {
+#endif
 	return selinux_xfrm_alloc_user(ctxp, uctx, gfp);
 }
 
@@ -294,6 +307,7 @@ int selinux_xfrm_policy_clone(struct xfrm_sec_ctx *old_ctx,
 			      struct xfrm_sec_ctx **new_ctxp)
 {
 	struct xfrm_sec_ctx *new_ctx;
+#endif
 
 	if (!old_ctx)
 		return 0;
@@ -313,6 +327,7 @@ int selinux_xfrm_policy_clone(struct xfrm_sec_ctx *old_ctx,
  */
 void selinux_xfrm_policy_free(struct xfrm_sec_ctx *ctx)
 {
+#endif  /* CONFIG_RKP_KDP */
 	selinux_xfrm_free(ctx);
 }
 
@@ -321,6 +336,7 @@ void selinux_xfrm_policy_free(struct xfrm_sec_ctx *ctx)
  */
 int selinux_xfrm_policy_delete(struct xfrm_sec_ctx *ctx)
 {
+#endif
 	return selinux_xfrm_delete(ctx);
 }
 
@@ -331,6 +347,7 @@ int selinux_xfrm_policy_delete(struct xfrm_sec_ctx *ctx)
 int selinux_xfrm_state_alloc(struct xfrm_state *x,
 			     struct xfrm_user_sec_ctx *uctx)
 {
+#endif  /* CONFIG_RKP_KDP */
 	return selinux_xfrm_alloc_user(&x->security, uctx, GFP_KERNEL);
 }
 
@@ -346,13 +363,15 @@ int selinux_xfrm_state_alloc_acquire(struct xfrm_state *x,
 	char *ctx_str = NULL;
 	int str_len;
 
+#endif
 	if (!polsec)
 		return 0;
 
 	if (secid == 0)
 		return -EINVAL;
 
-	rc = security_sid_to_context(secid, &ctx_str, &str_len);
+	rc = security_sid_to_context(&selinux_state, secid, &ctx_str,
+				     &str_len);
 	if (rc)
 		return rc;
 
@@ -380,6 +399,7 @@ out:
  */
 void selinux_xfrm_state_free(struct xfrm_state *x)
 {
+#endif
 	selinux_xfrm_free(x->security);
 }
 
@@ -388,6 +408,8 @@ void selinux_xfrm_state_free(struct xfrm_state *x)
  */
 int selinux_xfrm_state_delete(struct xfrm_state *x)
 {
+#endif
+
 	return selinux_xfrm_delete(x->security);
 }
 
@@ -420,7 +442,8 @@ int selinux_xfrm_sock_rcv_skb(u32 sk_sid, struct sk_buff *skb,
 	/* This check even when there's no association involved is intended,
 	 * according to Trent Jaeger, to make sure a process can't engage in
 	 * non-IPsec communication unless explicitly allowed by policy. */
-	return avc_has_perm(sk_sid, peer_sid,
+	return avc_has_perm(&selinux_state,
+			    sk_sid, peer_sid,
 			    SECCLASS_ASSOCIATION, ASSOCIATION__RECVFROM, ad);
 }
 
@@ -463,6 +486,6 @@ int selinux_xfrm_postroute_last(u32 sk_sid, struct sk_buff *skb,
 	/* This check even when there's no association involved is intended,
 	 * according to Trent Jaeger, to make sure a process can't engage in
 	 * non-IPsec communication unless explicitly allowed by policy. */
-	return avc_has_perm(sk_sid, SECINITSID_UNLABELED,
+	return avc_has_perm(&selinux_state, sk_sid, SECINITSID_UNLABELED,
 			    SECCLASS_ASSOCIATION, ASSOCIATION__SENDTO, ad);
 }

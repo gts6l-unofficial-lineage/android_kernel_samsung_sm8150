@@ -10,6 +10,7 @@
 #include <linux/migrate.h>
 #include <linux/stackdepot.h>
 #include <linux/seq_file.h>
+#include <linux/sched/clock.h>
 
 #include "internal.h"
 
@@ -24,9 +25,14 @@ struct page_owner {
 	gfp_t gfp_mask;
 	int last_migrate_reason;
 	depot_stack_handle_t handle;
+	unsigned long long alloc_ts, free_ts;
+	int alloc_cpu, free_cpu;
+	char alloc_comm[TASK_COMM_LEN], free_comm[TASK_COMM_LEN];
+	pid_t alloc_pid, free_pid;
 };
 
-static bool page_owner_disabled = true;
+static bool page_owner_disabled =
+	!IS_ENABLED(CONFIG_PAGE_OWNER_ENABLE_DEFAULT);
 DEFINE_STATIC_KEY_FALSE(page_owner_inited);
 
 static depot_stack_handle_t dummy_handle;
@@ -42,6 +48,9 @@ static int early_page_owner_param(char *buf)
 
 	if (strcmp(buf, "on") == 0)
 		page_owner_disabled = false;
+
+	if (strcmp(buf, "off") == 0)
+		page_owner_disabled = true;
 
 	return 0;
 }
@@ -111,11 +120,19 @@ void __reset_page_owner(struct page *page, unsigned int order)
 {
 	int i;
 	struct page_ext *page_ext;
+	struct page_owner *page_owner;
 
 	for (i = 0; i < (1 << order); i++) {
 		page_ext = lookup_page_ext(page + i);
 		if (unlikely(!page_ext))
 			continue;
+		page_owner = get_page_owner(page_ext);
+		page_owner->free_ts = sched_clock();
+		preempt_disable();
+		page_owner->free_cpu = smp_processor_id();
+		preempt_enable();
+		strncpy(page_owner->free_comm, current->comm, TASK_COMM_LEN);
+		page_owner->free_pid = current->pid;
 		__clear_bit(PAGE_EXT_OWNER, &page_ext->flags);
 	}
 }
@@ -179,6 +196,12 @@ static inline void __set_page_owner_handle(struct page_ext *page_ext,
 	page_owner->order = order;
 	page_owner->gfp_mask = gfp_mask;
 	page_owner->last_migrate_reason = -1;
+	page_owner->alloc_ts = sched_clock();
+	preempt_disable();
+	page_owner->alloc_cpu = smp_processor_id();
+	preempt_enable();
+	strncpy(page_owner->alloc_comm, current->comm, TASK_COMM_LEN);
+	page_owner->alloc_pid = current->pid;
 
 	__set_bit(PAGE_EXT_OWNER, &page_ext->flags);
 }
@@ -239,6 +262,16 @@ void __copy_page_owner(struct page *oldpage, struct page *newpage)
 	new_page_owner->last_migrate_reason =
 		old_page_owner->last_migrate_reason;
 	new_page_owner->handle = old_page_owner->handle;
+	new_page_owner->alloc_ts = old_page_owner->alloc_ts;
+	new_page_owner->alloc_cpu = old_page_owner->alloc_cpu;
+	strncpy(new_page_owner->alloc_comm, old_page_owner->alloc_comm,
+		TASK_COMM_LEN);
+	new_page_owner->alloc_pid = old_page_owner->alloc_pid;
+	new_page_owner->free_ts = old_page_owner->free_ts;
+	new_page_owner->free_cpu = old_page_owner->free_cpu;
+	strncpy(new_page_owner->free_comm, old_page_owner->free_comm,
+		TASK_COMM_LEN);
+	new_page_owner->free_pid = old_page_owner->free_pid;
 
 	/*
 	 * We don't clear the bit on the oldpage as it's going to be freed
@@ -360,6 +393,18 @@ print_page_owner(char __user *buf, size_t count, unsigned long pfn,
 			"Page allocated via order %u, mask %#x(%pGg)\n",
 			page_owner->order, page_owner->gfp_mask,
 			&page_owner->gfp_mask);
+	ret += snprintf(kbuf + ret, count - ret,
+			"%5lld.%06lld cpu:%d allocated by %5d %s\n",
+			page_owner->alloc_ts / NSEC_PER_SEC,
+			(page_owner->alloc_ts % NSEC_PER_SEC) / NSEC_PER_USEC,
+			page_owner->alloc_cpu, page_owner->alloc_pid,
+			page_owner->alloc_comm);
+	ret += snprintf(kbuf + ret, count - ret,
+			"%5lld.%06lld cpu:%d freed     by %5d %s\n",
+			page_owner->free_ts / NSEC_PER_SEC,
+			(page_owner->free_ts % NSEC_PER_SEC) / NSEC_PER_USEC,
+			page_owner->free_cpu, page_owner->free_pid,
+			page_owner->free_comm);
 
 	if (ret >= count)
 		goto err;
@@ -617,7 +662,6 @@ static void init_early_allocated_pages(void)
 {
 	pg_data_t *pgdat;
 
-	drain_all_pages(NULL);
 	for_each_online_pgdat(pgdat)
 		init_zones_in_node(pgdat);
 }

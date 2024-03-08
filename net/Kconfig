@@ -12,7 +12,7 @@ menuconfig NET
 	  The reason is that some programs need kernel networking support even
 	  when running on a stand-alone machine that isn't connected to any
 	  other computer.
-	  
+
 	  If you are upgrading from an older kernel, you
 	  should consider updating your networking tools too because changes
 	  in the kernel and the tools often go hand in hand. The tools are
@@ -88,6 +88,13 @@ if INET
 source "net/ipv4/Kconfig"
 source "net/ipv6/Kconfig"
 source "net/netlabel/Kconfig"
+#ifdef CONFIG_MPTCP
+	source "net/mptcp/Kconfig"
+#endif
+
+config NET_ANALYTICS
+	bool
+	default y
 
 endif # if INET
 
@@ -234,6 +241,11 @@ source "net/switchdev/Kconfig"
 source "net/l3mdev/Kconfig"
 source "net/qrtr/Kconfig"
 source "net/ncsi/Kconfig"
+source "net/rmnet_data/Kconfig"
+source "net/rmnet_usb/Kconfig"
+# KNOX NPA - START
+source "net/ncm/Kconfig"
+# KNOX NPA - END
 
 config RPS
 	bool
@@ -319,6 +331,15 @@ config NET_FLOW_LIMIT
 	  with many clients some protection against DoS by a single (spoofed)
 	  flow that greatly exceeds average workload.
 
+config SOCKEV_NLMCAST
+	bool "Enable SOCKEV Netlink Multicast"
+	default n
+	---help---
+	  Default client for SOCKEV notifier events. Sends multicast netlink
+	  messages whenever the socket event notifier is invoked. Enable if
+	  user space entities need to be notified of socket events without
+	  having to poll /proc
+
 menu "Network testing"
 
 config NET_PKTGEN
@@ -347,7 +368,7 @@ config NET_TCPPROBE
 
 	Documentation on how to use TCP connection probing can be found
 	at:
-	
+
 	  http://www.linuxfoundation.org/collaborate/workgroups/networking/tcpprobe
 
 	To compile this code as a module, choose M here: the
