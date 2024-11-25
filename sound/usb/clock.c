@@ -60,7 +60,11 @@ static struct uac_clock_selector_descriptor *
 					     ctrl_iface->extralen,
 					     cs, UAC2_CLOCK_SELECTOR))) {
 		if (cs->bLength >= sizeof(*cs) && cs->bClockID == clock_id) {
-			if (cs->bLength < 5 + cs->bNrInPins)
+			/* baCSourceID array (bNrInPins) plus bmControls and
+			 * iClockSelector must fit (CVE-2024-53150)
+			 */
+			if (cs->bLength < sizeof(*cs) + cs->bNrInPins +
+					  1 /* bmControls */ + 1 /* iClockSelector */)
 				return NULL;
 			return cs;
 		}
