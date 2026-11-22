@@ -4460,7 +4460,10 @@ static void _sde_plane_install_properties(struct drm_plane *plane,
 	}
 
 	msm_property_install_range(&psde->property_info, "zpos",
-		0x0, 0, zpos_max, zpos_def, PLANE_PROP_ZPOS);
+		0x0, 0, zpos_max | FOD_PRESSED_LAYER_ZORDER, zpos_def, PLANE_PROP_ZPOS);
+
+	msm_property_install_range(&psde->property_info, "fod",
+		0x0, 0, 1, 0, PLANE_PROP_FOD);
 
 	msm_property_install_range(&psde->property_info, "alpha",
 		0x0, 0, 255, 255, PLANE_PROP_ALPHA);
@@ -4893,6 +4896,15 @@ static void _sde_plane_set_excl_rect_v1(struct sde_plane *psde,
 			pstate->excl_rect.w, pstate->excl_rect.h);
 }
 
+int sde_plane_is_fod_layer(const struct drm_plane_state *drm_state)
+{
+	if (!drm_state)
+		return 0;
+
+	return sde_plane_get_property(to_sde_plane_state(drm_state),
+			PLANE_PROP_FOD);
+}
+
 static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		struct drm_plane_state *state, struct drm_property *property,
 		uint64_t val)
@@ -4909,6 +4921,17 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
 		SDE_ERROR_PLANE(psde, "invalid state\n");
 	} else {
 		pstate = to_sde_plane_state(state);
+		idx = msm_property_index(&psde->property_info, property);
+		if (idx == PLANE_PROP_ZPOS) {
+			ret = msm_property_atomic_set(&psde->property_info,
+				&pstate->property_state,
+				psde->property_info.property_array[PLANE_PROP_FOD],
+				!!(val & FOD_PRESSED_LAYER_ZORDER));
+			if (ret)
+				SDE_ERROR_PLANE(psde, "failed to set fod prop\n");
+			val &= ~FOD_PRESSED_LAYER_ZORDER;
+		}
+
 		ret = msm_property_atomic_set(&psde->property_info,
 				&pstate->property_state, property, val);
 		if (!ret) {

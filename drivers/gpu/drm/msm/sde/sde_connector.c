@@ -22,6 +22,7 @@
 #include "dsi_drm.h"
 #include "dsi_display.h"
 #include "sde_crtc.h"
+#include "sde_plane.h"
 #include "sde_rm.h"
 
 #if defined(CONFIG_DISPLAY_SAMSUNG) || defined(CONFIG_DISPLAY_SAMSUNG_LEGO)
@@ -609,6 +610,27 @@ static int _sde_connector_update_dirty_properties(
 	return 0;
 }
 
+#if defined(CONFIG_DISPLAY_SAMSUNG) || defined(CONFIG_DISPLAY_SAMSUNG_LEGO)
+static bool sde_connector_has_fod_plane(struct drm_connector *connector)
+{
+	struct drm_crtc_state *crtc_state;
+	struct drm_plane *plane;
+
+	if (!connector->state || !connector->state->crtc)
+		return false;
+
+	crtc_state = connector->state->crtc->state;
+	if (!crtc_state || !crtc_state->active)
+		return false;
+
+	drm_for_each_plane_mask(plane, connector->dev, crtc_state->plane_mask)
+		if (sde_plane_is_fod_layer(plane->state))
+			return true;
+
+	return false;
+}
+#endif
+
 int sde_connector_pre_kickoff(struct drm_connector *connector)
 {
 	struct sde_connector *c_conn;
@@ -651,6 +673,10 @@ int sde_connector_pre_kickoff(struct drm_connector *connector)
 	vdd = display->panel->panel_private;
 	finger_mask_state = sde_connector_get_property(c_conn->base.state,
 			CONNECTOR_PROP_FINGERPRINT_MASK);
+	/* UDFPS: an AOSP/Lineage HWC marks the pressed layer via the FOD zpos bit */
+	if (vdd->support_optical_fingerprint &&
+			sde_connector_has_fod_plane(&c_conn->base))
+		finger_mask_state = 1;
 	vdd->finger_mask_updated = false;
 	if (finger_mask_state != vdd->finger_mask) {
 		SDE_ERROR("[FINGER MASK]updated finger mask mode %d\n", finger_mask_state);
