@@ -857,7 +857,13 @@ struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)
 	int image_size;
 	u8 *image_ptr;
 
-	if (!bpf_jit_enable)
+	/*
+	 * gts6l: Samsung uH/RKP enforces stage-2 non-executable mappings on the module area that
+	 * bpf_jit_binary_alloc() uses, so JITed programs fault with an instruction abort on first run
+	 * (seen in netd's cgroup inet_create program). Always fall back to the interpreter, but keep
+	 * CONFIG_BPF_JIT so /proc/sys/net/core/bpf_jit_enable exists for Android's netbpfload.
+	 */
+	if (IS_ENABLED(CONFIG_UH_RKP) || !bpf_jit_enable)
 		return orig_prog;
 
 	tmp = bpf_jit_blind_constants(prog);
