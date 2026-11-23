@@ -74,6 +74,9 @@ void put_cred(const struct cred *_cred)
 {
 	struct cred *cred = (struct cred *) _cred;
 
+	/* upstream 4.14.2xx made put_cred(NULL) a no-op and dropped caller checks (e.g. __sk_destruct) */
+	if (!cred)
+		return;
 	validate_creds(cred);
 
 	if (rkp_ro_page((unsigned long)cred)) {
