@@ -48,9 +48,6 @@ bool crash_kexec_post_notifiers;
 int panic_on_warn __read_mostly;
 static unsigned int warn_limit __read_mostly;
 
-unsigned int oops_limit __read_mostly;
-atomic_t oops_count = ATOMIC_INIT(0);
-
 int panic_timeout = CONFIG_PANIC_TIMEOUT;
 EXPORT_SYMBOL_GPL(panic_timeout);
 
