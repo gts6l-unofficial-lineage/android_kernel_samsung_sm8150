@@ -1028,11 +1028,6 @@ static int f_midi_bind(struct usb_configuration *c, struct usb_function *f)
 		if (!f->hs_descriptors)
 			goto fail_f_midi;
 
-		if (gadget_is_superspeed_plus(c->cdev->gadget)) {
-			f->ssp_descriptors = usb_copy_descriptors(midi_function);
-			if (!f->ssp_descriptors)
-				goto fail_f_midi;
-		}
 	}
 
 	if (gadget_is_superspeed(c->cdev->gadget)) {
