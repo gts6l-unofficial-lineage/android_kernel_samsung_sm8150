@@ -51,9 +51,7 @@ static int sdp_crypto_init_rng(void)
 	struct crypto_rng *rng = NULL;
 	struct file *filp = NULL;
 	char *rng_seed = NULL;
-	mm_segment_t fs_type;
 
-	int trial = 10;
 	int read = 0;
 	int res = 0;
 
@@ -72,26 +70,17 @@ static int sdp_crypto_init_rng(void)
 	memset((void *)rng_seed, 0, SDP_CRYPTO_RNG_SEED_SIZE);
 
 	// open random device for drbg seed number
-	filp = filp_open("/dev/random", O_RDONLY, 0);
-	if (IS_ERR(filp)) {
-		res = PTR_ERR(filp);
-		printk(KERN_ERR "sdp_crypto: failed to open random(err:%d)\n", res);
-		filp = NULL;
+	/*
+	 * gts6l-lts: since the 4.14.285 RNG rewrite /dev/random has no ->read
+	 * (read_iter only), so f_op->read() jumped to NULL. /dev/random now
+	 * just blocks until the CRNG is initialised; do the same directly.
+	 */
+	if (wait_for_random_bytes()) {
+		res = -EINTR;
 		goto out;
 	}
-
-	fs_type = get_fs();
-	set_fs(KERNEL_DS);
-	while (trial > 0) {
-		int get_bytes = (int)filp->f_op->read(filp, &(rng_seed[read]),
-				SDP_CRYPTO_RNG_SEED_SIZE-read, &filp->f_pos);
-		if (likely(get_bytes > 0))
-			read += get_bytes;
-		if (likely(read == SDP_CRYPTO_RNG_SEED_SIZE))
-			break;
-		trial--;
-	}
-	set_fs(fs_type);
+	get_random_bytes(rng_seed, SDP_CRYPTO_RNG_SEED_SIZE);
+	read = SDP_CRYPTO_RNG_SEED_SIZE;
 
 	if (read != SDP_CRYPTO_RNG_SEED_SIZE) {
 		printk(KERN_ERR "sdp_crypto: failed to get enough random bytes (read=%d / request=%d)\n",

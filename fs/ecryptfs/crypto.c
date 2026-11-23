@@ -52,12 +52,9 @@ static int crypto_rng_init(void)
 	const int seed_len = 32;
 	char *seed = NULL;
 	int read_bytes = 0;
-	int get_bytes = 0;
-	int trialcount = 10;
 	int ret = 0;
 
 	struct file *filp = NULL;
-	mm_segment_t oldfs;
 
 	ecryptfs_crypto_rng = NULL;
 	seed = kmalloc(seed_len, GFP_KERNEL);
@@ -67,28 +64,17 @@ static int crypto_rng_init(void)
 		goto err_out;
 	}
 
-	filp = filp_open("/dev/random", O_RDONLY, 0);
-	if (IS_ERR(filp)) {
-		ecryptfs_printk(KERN_ERR, "Failed to open /dev/random\n");
+	/*
+	 * gts6l-lts: since the 4.14.285 RNG rewrite /dev/random has no ->read
+	 * (read_iter only), so f_op->read() jumped to NULL. /dev/random now
+	 * just blocks until the CRNG is initialised; do the same directly.
+	 */
+	if (wait_for_random_bytes()) {
 		ret = -1;
 		goto err_out;
 	}
-
-	oldfs = get_fs();
-	set_fs(KERNEL_DS);
-	memset((void *)seed, 0, seed_len);
-
-	while (trialcount > 0) {
-		get_bytes = (int)filp->f_op->read(filp, &(seed[read_bytes]), seed_len-read_bytes, &filp->f_pos);
-
-		if (get_bytes > 0)
-			read_bytes += get_bytes;
-		if (read_bytes != seed_len)
-			trialcount--;
-		else
-			break;
-	}
-	set_fs(oldfs);
+	get_random_bytes(seed, seed_len);
+	read_bytes = seed_len;
 
 	if (read_bytes != seed_len) {
 		ecryptfs_printk(KERN_ERR,

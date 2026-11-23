@@ -58,8 +58,14 @@ void __init init_random_pool(void)
 						RANDOM_BUFFER_SIZE);
 		bytes_received = (bytes_received <= RANDOM_BUFFER_SIZE) ?
 					bytes_received : RANDOM_BUFFER_SIZE;
-		add_hwgenerator_randomness(random_buffer, bytes_received,
-					   bytes_received << 3);
+		/*
+		 * gts6l-lts: since the 4.14.285 RNG rewrite add_hwgenerator_randomness()
+		 * calls kthread_should_stop() and may sleep; from setup_arch() on the
+		 * boot task that dereferences a NULL kthread (hang before the console).
+		 * This one-shot TZ seed is what add_bootloader_randomness() is for
+		 * (credited with CONFIG_RANDOM_TRUST_BOOTLOADER).
+		 */
+		add_bootloader_randomness(random_buffer, bytes_received);
 	}
 }
 
