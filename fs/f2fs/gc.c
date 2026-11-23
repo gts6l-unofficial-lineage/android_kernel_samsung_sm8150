@@ -1088,6 +1088,11 @@ next_step:
 				set_sbi_flag(sbi, SBI_NEED_FSCK);
 				continue;
 			}
+			/* upstream: only regular files/dirs/symlinks have data to move */
+			if (special_file(inode->i_mode)) {
+				iput(inode);
+				continue;
+			}
 
 			if (!down_write_trylock(
 				&F2FS_I(inode)->i_gc_rwsem[WRITE])) {
