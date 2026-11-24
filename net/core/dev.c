@@ -1829,7 +1829,7 @@ static int call_netdevice_notifiers_info(unsigned long val,
 					 struct net_device *dev,
 					 struct netdev_notifier_info *info)
 {
-	struct net *net = dev_net(info->dev);
+	struct net *net = dev_net(dev);
 	int ret;
 
 	ASSERT_RTNL();
