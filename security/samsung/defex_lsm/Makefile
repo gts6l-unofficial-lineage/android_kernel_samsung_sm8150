@@ -147,6 +147,8 @@ endif
 
 ccflags-y := -Wformat
 
+# generated defex_packed_rules.inc lives in $(obj) (source tree may be read-only)
+EXTRA_CFLAGS += -I$(obj)
 EXTRA_CFLAGS += -I$(srctree)/$(src)
 EXTRA_AFLAGS += -Isecurity/samsung/defex_lsm
 EXTRA_CFLAGS += -I$(srctree)/$(src)/cert
@@ -158,16 +160,16 @@ ifneq ($(wildcard  $(srctree)/$(src)/pack_rules.c),)
     hostprogs := pack_rules
     hostprogs-y := pack_rules
     HOST_EXTRACFLAGS += $(DEFEX_DEFINES)
-    clean-files := $(srctree)/$(src)/defex_packed_rules.inc
+    clean-files := defex_packed_rules.inc defex_packed_rules.bin defex_rules_reduced.c
     DEPEND_LIST := $(obj)/pack_rules
 
     quiet_cmd_pack = PACK    $<
-          cmd_pack = $(obj)/pack_rules -p $< $@ $(srctree)/$(src)/defex_packed_rules.bin
+          cmd_pack = $(obj)/pack_rules -p $< $@ $(obj)/defex_packed_rules.bin
 
     quiet_cmd_mkey = MAKEKEY $<
           cmd_mkey = cp -n $< $@ 2>/dev/null || true
 
-    $(obj)/core/defex_rules_proc.o: $(obj)/pack_rules $(srctree)/$(src)/defex_packed_rules.inc
+    $(obj)/core/defex_rules_proc.o: $(obj)/pack_rules $(obj)/defex_packed_rules.inc
 
     $(obj)/cert/defex_cert.o: $(obj)/cert/pubkey_eng.der $(obj)/cert/pubkey_user.der
 
@@ -180,21 +182,19 @@ ifneq ($(wildcard  $(srctree)/$(src)/pack_rules.c),)
     SOURCE_RULES := $(srctree)/$(src)/defex_rules.c
     ifneq ($(wildcard $(srctree)/$(src)/file_list),)
         $(warning '[DEFEX] file_list found')
-        SOURCE_RULES := $(srctree)/$(src)/defex_rules_reduced.c
+        SOURCE_RULES := $(obj)/defex_rules_reduced.c
         DEPEND_LIST += $(SOURCE_RULES)
         DEPEND_LIST += $(srctree)/$(src)/file_list
-        clean-files += $(DEPEND_LIST)
 
         quiet_cmd_reduce = REDUCE  $<
               cmd_reduce = $(obj)/pack_rules -r $< $@ $(srctree)/$(src)/file_list
 
-        $(srctree)/$(src)/defex_rules_reduced.c: $(srctree)/$(src)/defex_rules.c $(obj)/pack_rules
+        $(obj)/defex_rules_reduced.c: $(srctree)/$(src)/defex_rules.c $(obj)/pack_rules
 		$(call cmd,reduce)
     endif
 
-    $(srctree)/$(src)/defex_packed_rules.inc: $(SOURCE_RULES) $(DEPEND_LIST)
+    $(obj)/defex_packed_rules.inc: $(SOURCE_RULES) $(DEPEND_LIST)
 	$(call cmd,pack)
-	@cp -n $(obj)/pack_rules $(srctree)/$(src)/pack_rules 2>/dev/null || true
 
 else
     EXTRA_CFLAGS += $(DEFEX_DEFINES)
