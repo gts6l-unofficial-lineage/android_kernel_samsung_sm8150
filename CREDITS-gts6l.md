@@ -16,7 +16,8 @@ individual authorship is preserved in the git history wherever the original hist
   maintained there (committed largely by **basamaryan**, original upstream authors kept per commit;
   in this branch from "BACKPORT: selinux: allow per-file labelling for bpffs" to "UPSTREAM: ANDROID:
   bpf: do not fail to load if log is full"), the EROFS 5.10 sync (Gao Xiang and others, see the import
-  commit), the LZ4 updates, and the smp_cond_load_relaxed / xa_lock / attach_page_private backports.
+  commit), the binder freeze support (BINDER_FREEZE / BINDER_GET_FROZEN_INFO, Marco Ballesio and
+  others) that lets Android's app freezer work, the LZ4 updates, and the smp_cond_load_relaxed / xa_lock / attach_page_private backports.
 - **LineageOS samsung sm8250 kernels** — the approach for driving the UDFPS finger mask from the
   pressed FOD layer, ported here to Samsung's existing HBM path.
 - Device bring-up, the LTS merges and their manual resolutions, the RKP-aware BPF JIT handling and
