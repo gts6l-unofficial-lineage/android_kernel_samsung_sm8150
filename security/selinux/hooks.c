@@ -3076,7 +3076,7 @@ static int selinux_sb_kern_mount(struct super_block *sb, int flags, void *data)
 	security_init_mnt_opts(&opts);
 
 	if (!data)
-		goto out;
+		goto set_opts;
 
 	BUG_ON(sb->s_type->fs_flags & FS_BINARY_MOUNTDATA);
 
@@ -3084,7 +3084,7 @@ static int selinux_sb_kern_mount(struct super_block *sb, int flags, void *data)
 	if (rc)
 		goto out_err;
 
-out:
+set_opts:
 	rc = selinux_set_mnt_opts(sb, &opts, 0, NULL);
 
 out_err:
