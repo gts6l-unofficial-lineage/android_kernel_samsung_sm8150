@@ -15,8 +15,8 @@
 
 #define pr_fmt(fmt) "smcinvoke: %s: " fmt, __func__
 
-#include <linux/overflow.h>
 #include <linux/module.h>
+#include <linux/overflow.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
