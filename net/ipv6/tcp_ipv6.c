@@ -1467,17 +1467,6 @@ out:
 	return NULL;
 }
 
-/* The socket must have it's spinlock held when we get
- * here, unless it is a TCP_LISTEN socket.
- *
- * We have a potential double-lock case here, so even when
- * doing backlog processing we use the BH locking scheme.
- * This is because we cannot sleep with the original spinlock
- * held.
- */
-#ifndef CONFIG_MPTCP
-static
-#endif
 u16 tcp_v6_get_syncookie(struct sock *sk, struct ipv6hdr *iph,
 			 struct tcphdr *th, u32 *cookie)
 {
@@ -1493,6 +1482,17 @@ u16 tcp_v6_get_syncookie(struct sock *sk, struct ipv6hdr *iph,
 	return mss;
 }
 
+/* The socket must have it's spinlock held when we get
+ * here, unless it is a TCP_LISTEN socket.
+ *
+ * We have a potential double-lock case here, so even when
+ * doing backlog processing we use the BH locking scheme.
+ * This is because we cannot sleep with the original spinlock
+ * held.
+ */
+#ifndef CONFIG_MPTCP
+static
+#endif
 int tcp_v6_do_rcv(struct sock *sk, struct sk_buff *skb)
 {
 	struct ipv6_pinfo *np = inet6_sk(sk);
