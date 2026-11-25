@@ -5803,7 +5803,8 @@ int hdd_set_csr_auth_type(struct hdd_adapter *adapter,
 					eCSR_AUTH_TYPE_WPA_NONE;
 			}
 		}
-		if (sta_ctx->wpa_versions & NL80211_WPA_VERSION_2) {
+		if (sta_ctx->wpa_versions & (NL80211_WPA_VERSION_2 |
+					      NL80211_WPA_VERSION_3)) {
 #ifdef FEATURE_WLAN_ESE
 			if ((rsn_auth_type == eCSR_AUTH_TYPE_CCKM_RSN) &&
 			    ((key_mgmt & HDD_AUTH_KEY_MGMT_802_1X)
