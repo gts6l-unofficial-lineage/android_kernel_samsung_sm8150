@@ -166,8 +166,11 @@ static int hall_logical_probe(struct platform_device *pdev)
 	input->dev.parent = &pdev->dev;
 
 	input->evbit[0] |= BIT_MASK(EV_SW);
-	input_set_capability(input, EV_SW, SW_FLIP);
-	input_set_capability(input, EV_SW, SW_HALL_LOGICAL);
+	/*
+	 * SW_FLIP and SW_HALL_LOGICAL are Samsung-only codes above Android's
+	 * SW_MAX; Android 17's InputReader aborts on them. Don't advertise them,
+	 * so the input core drops these events (the state stays in sysfs).
+	 */
 
 	input->open = hall_logical_open;
 	input->close = hall_logical_close;
