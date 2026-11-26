@@ -7,8 +7,9 @@ individual authorship is preserved in the git history wherever the original hist
 - **XiaoYeZi (qaz6750)** — import of the Samsung source and the first fixes
   (github.com/qaz6750/kernel_samsung_sm8150_gts6l); their nine commits are kept as authored,
   re-parented onto upstream v4.14.190.
-- **Linux stable (kernel.org)** — 4.14.191 through 4.14.336, imported from the stable incremental
-  patches; **OpenELA kernel-lts** — 4.14.336 to 4.14.357 (github.com/openela/kernel-lts).
+- **Linux stable (kernel.org)** — 4.14.191 through 4.14.336, merged from the linux-stable tags;
+  **OpenELA kernel-lts** — 4.14.336 to 4.14.357 (github.com/openela/kernel-lts). 4.14.357-openela
+  (March 2026) is the last 4.14 release of either; later fixes are picked individually.
 - **fengkeqei** — conflict resolutions of the Galaxy S10 (SM-G9730) LTS merges
   (github.com/fengkeqei/android_kernel_samsung_sm8150), reused for files whose pre-merge state was
   identical; credited per merge with the exact commit.
@@ -22,3 +23,5 @@ individual authorship is preserved in the git history wherever the original hist
   pressed FOD layer, ported here to Samsung's existing HBM path.
 - Device bring-up, the LTS merges and their manual resolutions, the RKP-aware BPF JIT handling and
   the build fixes: lunar-seal, with AI assistance (Co-Authored-By: Claude trailers).
+- Samsung's uH/RKP/KDP hypervisor support is disabled in the gts6l defconfig, as in the LineageOS
+  Samsung kernels; the WPA3 nl80211 definition (Chung-Hsien Hsu) is backported from mainline.
