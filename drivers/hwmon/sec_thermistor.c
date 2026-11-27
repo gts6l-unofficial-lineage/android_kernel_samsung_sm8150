@@ -27,11 +27,13 @@
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/iio/consumer.h>
+#include <linux/thermal.h>
 #include <linux/platform_data/sec_thermistor.h>
 
 struct sec_therm_info {
 	struct device *dev;
 	struct device *hwmon_dev;
+	struct thermal_zone_device *tzd;
 	struct sec_therm_platform_data *pdata;
 	char name[PLATFORM_NAME_SIZE];
 };
@@ -221,6 +223,29 @@ static ssize_t sec_therm_show_temperature(struct device *dev,
 	return snprintf(buf, sizeof(PAGE_SIZE), "%d\n", temp);
 }
 
+/*
+ * Thermal zone view of the thermistor, so that generic thermal userspace can
+ * read it by name. The sysfs node above reports tenths of a degree Celsius,
+ * thermal zones report millidegrees.
+ */
+static int sec_therm_tz_get_temp(struct thermal_zone_device *tzd, int *temp)
+{
+	struct sec_therm_info *info = tzd->devdata;
+	int adc;
+
+	adc = sec_therm_get_adc_data(info);
+	if (adc < 0)
+		return adc;
+
+	*temp = convert_adc_to_temper(info, adc) * 100;
+
+	return 0;
+}
+
+static struct thermal_zone_device_ops sec_therm_tz_ops = {
+	.get_temp = sec_therm_tz_get_temp,
+};
+
 static ssize_t sec_therm_show_temp_adc(struct device *dev,
 				   struct device_attribute *attr,
 				   char *buf)
@@ -332,6 +357,15 @@ static int sec_therm_probe(struct platform_device *pdev)
 		goto err_register_hwmon;
 	}
 
+	/* No trip points and no polling: the zone is only read on demand */
+	info->tzd = thermal_zone_device_register(pdev_id->name, 0, 0, info,
+						 &sec_therm_tz_ops, NULL, 0, 0);
+	if (IS_ERR(info->tzd)) {
+		dev_warn(&pdev->dev, "unable to register as thermal zone: %ld\n",
+			 PTR_ERR(info->tzd));
+		info->tzd = NULL;
+	}
+
 	dev_info(&pdev->dev, "%s successfully probed.\n", pdev_id->name);
 
 	return 0;
@@ -355,6 +389,8 @@ static int sec_therm_remove(struct platform_device *pdev)
 
 	pdev_id = of_id ? of_id->data : platform_get_device_id(pdev);
 
+	if (info->tzd)
+		thermal_zone_device_unregister(info->tzd);
 	hwmon_device_unregister(info->hwmon_dev);
 	sysfs_remove_group(&info->dev->kobj, &sec_therm_attr_group);
 	platform_set_drvdata(pdev, NULL);
