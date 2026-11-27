@@ -494,9 +494,14 @@ __next_cmd:
 		goto __done;
 	}
 
-	__sec_debug_set_restart_reason(RESTART_REASON_REBOOT);
-
-	return;
+	/*
+	 * A command that is not in the table (for instance "shell" from
+	 * "adb shell reboot") is a plain reboot. The PMIC restart reason has
+	 * to be written for it as well: it survives the reboot, so a
+	 * "recovery" left there by an earlier boot would send the bootloader
+	 * into the recovery again.
+	 */
+	sec_rr = RESTART_REASON_REBOOT;
 
 __done:
 	if (pon_rr != PON_RESTART_REASON_NOT_HANDLE) {
