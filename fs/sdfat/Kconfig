@@ -15,6 +15,15 @@ config SDFAT_FS
 	  To compile this as a module, choose M here: the module will be called
 	  sdfat_core and sdfat_fs.
 
+config SDFAT_USE_FOR_EXFAT
+	bool "Register sdFAT as exFAT"
+	default y
+	depends on SDFAT_FS
+	help
+	  Register the sdFAT driver under the file system name "exfat" as
+	  well, so that user space that mounts exFAT volumes by that name
+	  (Android's vold) can use it.
+
 config SDFAT_DELAYED_META_DIRTY
 	bool "Enable delayed metadata dirty"
 	default y
