@@ -23,6 +23,7 @@
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
 #include <linux/workqueue.h>
+#include <uapi/linux/close_range.h>
 
 unsigned int sysctl_nr_open __read_mostly = 1024*1024;
 unsigned int sysctl_nr_open_min = BITS_PER_LONG;
@@ -642,6 +643,65 @@ int __close_fd(struct files_struct *files, unsigned fd)
 out_unlock:
 	spin_unlock(&files->file_lock);
 	return -EBADF;
+}
+
+/*
+ * close_range() (Linux 5.9, CLOSE_RANGE_CLOEXEC from 5.11), reduced to what
+ * this kernel needs: closing a range, or marking it close-on-exec. Bionic's
+ * posix_spawn(POSIX_SPAWN_CLOEXEC_DEFAULT) calls
+ * close_range(3, ~0U, CLOSE_RANGE_CLOEXEC) in the child and exits with 127
+ * if that fails. CLOSE_RANGE_UNSHARE is not supported (-EINVAL).
+ */
+static void __range_cloexec(struct files_struct *files, unsigned int fd,
+			    unsigned int max_fd)
+{
+	struct fdtable *fdt;
+
+	spin_lock(&files->file_lock);
+	fdt = files_fdtable(files);
+	if (fdt->max_fds)
+		max_fd = min(max_fd, fdt->max_fds - 1);
+	if (fdt->max_fds && fd <= max_fd)
+		bitmap_set(fdt->close_on_exec, fd, max_fd - fd + 1);
+	spin_unlock(&files->file_lock);
+}
+
+static void __range_close(struct files_struct *files, unsigned int fd,
+			  unsigned int max_fd)
+{
+	unsigned int n;
+
+	rcu_read_lock();
+	n = files_fdtable(files)->max_fds;
+	rcu_read_unlock();
+	if (!n)
+		return;
+	max_fd = min(max_fd, n - 1);
+
+	for (; fd <= max_fd; fd++) {
+		__close_fd(files, fd);
+		cond_resched();
+		if (fd == max_fd)
+			break;
+	}
+}
+
+SYSCALL_DEFINE3(close_range, unsigned int, fd, unsigned int, max_fd,
+		unsigned int, flags)
+{
+	struct files_struct *files = current->files;
+
+	if (flags & ~CLOSE_RANGE_CLOEXEC)
+		return -EINVAL;
+	if (fd > max_fd)
+		return -EINVAL;
+
+	if (flags & CLOSE_RANGE_CLOEXEC)
+		__range_cloexec(files, fd, max_fd);
+	else
+		__range_close(files, fd, max_fd);
+
+	return 0;
 }
 
 void do_close_on_exec(struct files_struct *files)
