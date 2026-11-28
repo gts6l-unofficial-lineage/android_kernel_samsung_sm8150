@@ -235,6 +235,14 @@ int update_dsi_tcon_mdnie_register(struct samsung_display_driver_data *vdd)
 		tune_data_dsi = mdnie_data->mdnie_tune_value_dsi[tune->mdnie_app][tune->mdnie_mode][tune->outdoor];
 	}
 
+	/*
+	 * Outdoor mode on a screen without an outdoor table (the panel tables only
+	 * have one for video and camera): use the strong-light tables instead.
+	 */
+	if (!tune_data_dsi && tune->outdoor == OUTDOOR_ON_MODE)
+		tune_data_dsi = (tune->mdnie_mode == AUTO_MODE) ?
+			mdnie_data->DSI_HBM_CE_MDNIE : mdnie_data->DSI_HBM_CE_D65_MDNIE;
+
 	if (vdd->mdnie.support_trans_dimming && vdd->mdnie.disable_trans_dimming && (tune->hbm_enable == false)) {
 		if (tune_data_dsi) {
 			memcpy(mdnie_data->DSI_RGB_SENSOR_MDNIE_1,
